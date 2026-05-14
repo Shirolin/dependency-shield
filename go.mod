@@ -1,6 +1,6 @@
 module github.com/shiro/dependency-shield
 
-go 1.21
+go 1.25
 
 require (
 	github.com/fatih/color v1.19.0 // indirect
