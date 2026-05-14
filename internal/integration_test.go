@@ -45,6 +45,15 @@ func TestNpmConfigurationHierarchy(t *testing.T) {
 	os.Setenv("USERPROFILE", mockHome)
 	defer os.Setenv("USERPROFILE", originalUserProfile)
 
+	originalAppData := os.Getenv("APPDATA")
+	os.Setenv("APPDATA", mockHome)
+	defer os.Setenv("APPDATA", originalAppData)
+
+	// For Linux/macOS XDG support
+	originalXdg := os.Getenv("XDG_CONFIG_HOME")
+	os.Setenv("XDG_CONFIG_HOME", mockHome)
+	defer os.Setenv("XDG_CONFIG_HOME", originalXdg)
+
 	// Implementation Hint: Calls 'audit.AuditNpm' on two different paths and asserts the expected statuses.
 	t.Run("Direct Audit", func(t *testing.T) {
 		resGlobal := audit.AuditNpm(globalPath)
