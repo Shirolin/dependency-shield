@@ -1,4 +1,4 @@
-module github.com/shiro/dependencyshield
+module github.com/shiro/dependency-shield
 
 go 1.26.3
 
