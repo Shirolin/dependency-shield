@@ -6,6 +6,31 @@ import (
 	"runtime"
 )
 
+// FindConfigUpwards searches for a file with the given name starting from the current
+// working directory and moving upwards to the root directory.
+func FindConfigUpwards(fileName string) string {
+	curr, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	for {
+		path := filepath.Join(curr, fileName)
+		if _, err := os.Stat(path); err == nil {
+			absPath, _ := filepath.Abs(path)
+			return absPath
+		}
+
+		parent := filepath.Dir(curr)
+		if parent == curr {
+			break
+		}
+		curr = parent
+	}
+
+	return ""
+}
+
 // GetNpmrcPath returns the path to the global '.npmrc' file.
 func GetNpmrcPath() string {
 	home, err := os.UserHomeDir()
@@ -59,4 +84,24 @@ func GetBunfigPath() string {
 		return ""
 	}
 	return filepath.Join(home, ".bunfig.toml")
+}
+
+// GetLocalNpmrcPath returns the path to the local '.npmrc' file if found in the directory hierarchy.
+func GetLocalNpmrcPath() string {
+	return FindConfigUpwards(".npmrc")
+}
+
+// GetLocalPnpmrcPath returns the path to the local '.npmrc' file (used by pnpm) if found.
+func GetLocalPnpmrcPath() string {
+	return FindConfigUpwards(".npmrc")
+}
+
+// GetLocalUvConfigPath returns the path to the local 'uv.toml' file if found.
+func GetLocalUvConfigPath() string {
+	return FindConfigUpwards("uv.toml")
+}
+
+// GetLocalBunfigPath returns the path to the local '.bunfig.toml' file if found.
+func GetLocalBunfigPath() string {
+	return FindConfigUpwards(".bunfig.toml")
 }

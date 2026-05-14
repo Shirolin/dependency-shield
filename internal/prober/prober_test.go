@@ -1,6 +1,8 @@
 package prober
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -42,5 +44,43 @@ func TestGetBunfigPath(t *testing.T) {
 	}
 	if !strings.HasSuffix(path, ".bunfig.toml") {
 		t.Errorf("Expected path to end with .bunfig.toml, got %s", path)
+	}
+}
+
+func TestFindConfigUpwards(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "prober_test")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	parentDir := filepath.Join(tempDir, "parent")
+	childDir := filepath.Join(parentDir, "child")
+	grandchildDir := filepath.Join(childDir, "grandchild")
+
+	if err := os.MkdirAll(grandchildDir, 0755); err != nil {
+		t.Fatalf("Failed to create directory structure: %v", err)
+	}
+
+	configPath := filepath.Join(parentDir, ".npmrc")
+	if err := os.WriteFile(configPath, []byte("registry=https://registry.npmjs.org/"), 0644); err != nil {
+		t.Fatalf("Failed to write config file: %v", err)
+	}
+
+	// Change working directory to grandchild
+	oldWd, _ := os.Getwd()
+	defer os.Chdir(oldWd)
+	if err := os.Chdir(grandchildDir); err != nil {
+		t.Fatalf("Failed to change working directory: %v", err)
+	}
+
+	foundPath := FindConfigUpwards(".npmrc")
+	if foundPath == "" {
+		t.Error("Expected to find .npmrc, but got empty string")
+	}
+
+	absConfigPath, _ := filepath.Abs(configPath)
+	if foundPath != absConfigPath {
+		t.Errorf("Expected path %s, got %s", absConfigPath, foundPath)
 	}
 }
