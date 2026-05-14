@@ -21,33 +21,47 @@ var fixCmd = &cobra.Command{
 		fmt.Println("---------------------------------")
 
 		tools := []struct {
-			name   string
-			path   string
-			audit  func(string) model.AuditResult
-			fix    func(string) error
+			name       string
+			globalPath string
+			localPath  string
+			auditFunc  func(string) model.AuditResult
+			fixFunc    func(string) error
 		}{
-			{"npm", prober.GetNpmrcPath(), audit.AuditNpm, fixer.FixNpmrc},
-			{"pnpm", prober.GetPnpmrcPath(), audit.AuditPnpm, fixer.FixPnpmrc},
-			{"uv", prober.GetUvConfigPath(), audit.AuditUv, fixer.FixUvConfig},
-			{"bun", prober.GetBunfigPath(), audit.AuditBun, fixer.FixBunfig},
+			{"npm", prober.GetNpmrcPath(), prober.GetLocalNpmrcPath(), audit.AuditNpm, fixer.FixNpmrc},
+			{"pnpm", prober.GetPnpmrcPath(), prober.GetLocalPnpmrcPath(), audit.AuditPnpm, fixer.FixPnpmrc},
+			{"uv", prober.GetUvConfigPath(), prober.GetLocalUvConfigPath(), audit.AuditUv, fixer.FixUvConfig},
+			{"bun", prober.GetBunfigPath(), prober.GetLocalBunfigPath(), audit.AuditBun, fixer.FixBunfig},
 		}
 
 		for _, t := range tools {
-			res := t.audit(t.path)
-			if res.Status == model.StatusFailed {
-				err := t.fix(t.path)
-				if err != nil {
-					color.Red("[❌] %s: FIX FAILED (%s)\n", t.name, err.Error())
-				} else {
-					color.Green("[✅] %s: FIXED\n", t.name)
-				}
-			} else if res.Status == model.StatusPassed {
-				color.Cyan("[✔] %s: ALREADY PASSED\n", t.name)
-			} else {
-				color.Yellow("[⚠️] %s: SKIPPED (%s)\n", t.name, res.Message)
-			}
+			// Fix Global
+			fixTool(t.name, "Global", t.globalPath, t.auditFunc, t.fixFunc)
+
+			// Fix Local
+			fixTool(t.name, "Local", t.localPath, t.auditFunc, t.fixFunc)
 		}
 	},
+}
+
+func fixTool(name, scope, path string, auditFunc func(string) model.AuditResult, fixFunc func(string) error) {
+	if path == "" && scope == "Local" {
+		color.Yellow("[⚠️] %s (%s): SKIPPED (No local config found)\n", name, scope)
+		return
+	}
+
+	res := auditFunc(path)
+	if res.Status == model.StatusFailed {
+		err := fixFunc(path)
+		if err != nil {
+			color.Red("[❌] %s (%s): FIX FAILED (%s)\n", name, scope, err.Error())
+		} else {
+			color.Green("[✅] %s (%s): FIXED\n", name, scope)
+		}
+	} else if res.Status == model.StatusPassed {
+		color.Cyan("[✔] %s (%s): ALREADY PASSED\n", name, scope)
+	} else {
+		color.Yellow("[⚠️] %s (%s): SKIPPED (%s)\n", name, scope, res.Message)
+	}
 }
 
 func init() {

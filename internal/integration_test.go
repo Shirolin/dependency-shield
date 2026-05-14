@@ -59,18 +59,43 @@ func TestNpmConfigurationHierarchy(t *testing.T) {
 	})
 
 	// 4. The test should attempt to audit both and expect a result that includes both the global and local findings.
-	// 5. Currently, our 'audit' and 'prober' packages only support global paths. Therefore, this test SHOULD FAIL.
 	t.Run("Automated Discovery", func(t *testing.T) {
-		// In a real application run, we would trigger an audit that should find both.
-		// Currently, we only have GetNpmrcPath which returns a single string (the global one).
-		
+		// Change working directory to mock project so prober can find the local .npmrc
+		oldWd, _ := os.Getwd()
+		if err := os.Chdir(mockProject); err != nil {
+			t.Fatalf("failed to change wd: %v", err)
+		}
+		defer os.Chdir(oldWd)
+
 		results := []model.AuditResult{
 			audit.AuditNpm(prober.GetNpmrcPath()),
+			audit.AuditNpm(prober.GetLocalNpmrcPath()),
 		}
 
-		// We expect 2 results if hierarchy is supported, but we only get 1 (the global one).
+		// We expect 2 results if hierarchy is supported
 		if len(results) < 2 {
-			t.Errorf("Expected at least 2 audit results for npm (global and local), but found %d. Configuration hierarchy support is missing.", len(results))
+			t.Errorf("Expected at least 2 audit results for npm (global and local), but found %d.", len(results))
+		}
+
+		foundGlobal := false
+		foundLocal := false
+		for _, res := range results {
+			if res.ConfigPath == globalPath {
+				foundGlobal = true
+				if res.Status != model.StatusPassed {
+					t.Errorf("Global result should pass")
+				}
+			}
+			if res.ConfigPath == localPath {
+				foundLocal = true
+				if res.Status != model.StatusFailed {
+					t.Errorf("Local result should fail")
+				}
+			}
+		}
+
+		if !foundGlobal || !foundLocal {
+			t.Errorf("Did not find both global and local results (Global: %v, Local: %v)", foundGlobal, foundLocal)
 		}
 	})
 }

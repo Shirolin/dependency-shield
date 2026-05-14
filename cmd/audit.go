@@ -17,15 +17,26 @@ var auditCmd = &cobra.Command{
 		fmt.Println("🛡️ DependencyShield Audit Report")
 		fmt.Println("---------------------------------")
 
-		results := []model.AuditResult{
-			audit.AuditNpm(prober.GetNpmrcPath()),
-			audit.AuditPnpm(prober.GetPnpmrcPath()),
-			audit.AuditUv(prober.GetUvConfigPath()),
-			audit.AuditBun(prober.GetBunfigPath()),
+		tools := []struct {
+			name       string
+			globalPath string
+			localPath  string
+			auditFunc  func(string) model.AuditResult
+		}{
+			{"npm", prober.GetNpmrcPath(), prober.GetLocalNpmrcPath(), audit.AuditNpm},
+			{"pnpm", prober.GetPnpmrcPath(), prober.GetLocalPnpmrcPath(), audit.AuditPnpm},
+			{"uv", prober.GetUvConfigPath(), prober.GetLocalUvConfigPath(), audit.AuditUv},
+			{"bun", prober.GetBunfigPath(), prober.GetLocalBunfigPath(), audit.AuditBun},
 		}
 
-		for _, res := range results {
-			printResult(res)
+		for _, t := range tools {
+			// Global
+			globalRes := t.auditFunc(t.globalPath)
+			printResult(globalRes, t.name, "Global")
+
+			// Local
+			localRes := t.auditFunc(t.localPath)
+			printResult(localRes, t.name, "Local")
 		}
 	},
 }
@@ -34,7 +45,7 @@ func init() {
 	rootCmd.AddCommand(auditCmd)
 }
 
-func printResult(res model.AuditResult) {
+func printResult(res model.AuditResult, toolName, scope string) {
 	var icon string
 	var c *color.Color
 
@@ -53,7 +64,7 @@ func printResult(res model.AuditResult) {
 		c = color.New(color.FgWhite)
 	}
 
-	c.Printf("[%s] %s: %s", icon, res.ToolName, res.Status)
+	c.Printf("[%s] %s (%s): %s", icon, toolName, scope, res.Status)
 	if res.Status == model.StatusPassed {
 		fmt.Printf(" (Path: %s)\n", res.ConfigPath)
 	} else {
