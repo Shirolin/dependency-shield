@@ -15,9 +15,10 @@ func SetOut(w io.Writer) {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "shield",
-	Short: "DependencyShield - Security audit and fixer for package managers",
-	Long:  `DependencyShield (shield) is a security CLI tool to audit and fix package manager configurations to prevent dependency-based attacks.`,
+	Use:     "shield",
+	Version: "v1.0.0",
+	Short:   "DependencyShield - Security audit and fixer for package managers",
+	Long:    `DependencyShield (shield) is a security CLI tool to audit and fix package manager configurations to prevent dependency-based attacks.`,
 }
 
 func Execute() {
