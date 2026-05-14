@@ -80,7 +80,12 @@ func TestFindConfigUpwards(t *testing.T) {
 	}
 
 	absConfigPath, _ := filepath.Abs(configPath)
-	if foundPath != absConfigPath {
-		t.Errorf("Expected path %s, got %s", absConfigPath, foundPath)
+	
+	// Normalize paths for comparison (crucial for macOS /private/var symlinks)
+	normalizedFound, _ := filepath.EvalSymlinks(foundPath)
+	normalizedExpected, _ := filepath.EvalSymlinks(absConfigPath)
+
+	if normalizedFound != normalizedExpected {
+		t.Errorf("Expected path %s, got %s", normalizedExpected, normalizedFound)
 	}
 }

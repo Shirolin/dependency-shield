@@ -89,13 +89,17 @@ func TestNpmConfigurationHierarchy(t *testing.T) {
 		foundGlobal := false
 		foundLocal := false
 		for _, res := range results {
-			if res.ConfigPath == globalPath {
+			normResPath, _ := filepath.EvalSymlinks(res.ConfigPath)
+			normGlobalPath, _ := filepath.EvalSymlinks(globalPath)
+			normLocalPath, _ := filepath.EvalSymlinks(localPath)
+
+			if normResPath == normGlobalPath {
 				foundGlobal = true
 				if res.Status != model.StatusPassed {
 					t.Errorf("Global result should pass")
 				}
 			}
-			if res.ConfigPath == localPath {
+			if normResPath == normLocalPath {
 				foundLocal = true
 				if res.Status != model.StatusFailed {
 					t.Errorf("Local result should fail")
