@@ -8,9 +8,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "dependencyshield",
-	Short: "A security CLI tool to audit package manager configurations",
-	Long:  `DependencyShield is a security CLI tool to audit package manager configurations.`,
+	Use:   "shield",
+	Short: "DependencyShield - Security audit and fixer for package managers",
+	Long:  `DependencyShield (shield) is a security CLI tool to audit and fix package manager configurations to prevent dependency-based attacks.`,
 }
 
 func Execute() {
