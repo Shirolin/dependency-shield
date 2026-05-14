@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/fatih/color"
-	"github.com/shiro/dependencyshield/internal/audit"
-	"github.com/shiro/dependencyshield/internal/model"
-	"github.com/shiro/dependencyshield/internal/prober"
+	"github.com/shiro/dependency-shield/internal/audit"
+	"github.com/shiro/dependency-shield/internal/model"
+	"github.com/shiro/dependency-shield/internal/prober"
 	"github.com/spf13/cobra"
 )
 

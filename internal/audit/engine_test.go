@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/shiro/dependencyshield/internal/model"
+	"github.com/shiro/dependency-shield/internal/model"
 )
 
 func TestAuditNpm(t *testing.T) {

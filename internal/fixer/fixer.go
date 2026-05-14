@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/shiro/dependencyshield/internal/config"
+	"github.com/shiro/dependency-shield/internal/config"
 )
 
 // FixNpmrc sets min-release-age in .npmrc

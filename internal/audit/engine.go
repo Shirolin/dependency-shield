@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
-	"github.com/shiro/dependencyshield/internal/config"
-	"github.com/shiro/dependencyshield/internal/model"
+	"github.com/shiro/dependency-shield/internal/config"
+	"github.com/shiro/dependency-shield/internal/model"
 )
 
 // AuditNpm scans for 'min-release-age=30' in the given path.
