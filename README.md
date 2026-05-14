@@ -15,7 +15,7 @@ DependencyShield 是一个专为个人开发者设计的轻量级、零依赖安
 ## 🚀 快速开始
 
 ### 安装
-在 [Releases](https://github.com/youruser/dependencyshield/releases) 页面下载对应系统的二进制文件。
+在 [Releases](https://github.com/shiro/dependency-shield/releases) 页面下载对应系统的二进制文件。
 
 ### 审计 (Audit)
 检查您的开发环境是否安全：
