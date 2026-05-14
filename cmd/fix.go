@@ -17,8 +17,8 @@ var fixCmd = &cobra.Command{
 	Use:   "fix",
 	Short: "Fix security policy violations in package manager configurations",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("🛠️ DependencyShield Fix Report")
-		fmt.Println("---------------------------------")
+		fmt.Fprintln(outWriter, "🛠️ DependencyShield Fix Report")
+		fmt.Fprintln(outWriter, "---------------------------------")
 
 		tools := []struct {
 			name       string
@@ -45,7 +45,7 @@ var fixCmd = &cobra.Command{
 
 func fixTool(name, scope, path string, auditFunc func(string) model.AuditResult, fixFunc func(string) error) {
 	if path == "" && scope == "Local" {
-		color.Yellow("[⚠️] %s (%s): SKIPPED (No local config found)\n", name, scope)
+		color.New(color.FgYellow).Fprintf(outWriter, "[⚠️] %s (%s): SKIPPED (No local config found)\n", name, scope)
 		return
 	}
 
@@ -53,14 +53,14 @@ func fixTool(name, scope, path string, auditFunc func(string) model.AuditResult,
 	if res.Status == model.StatusFailed {
 		err := fixFunc(path)
 		if err != nil {
-			color.Red("[❌] %s (%s): FIX FAILED (%s)\n", name, scope, err.Error())
+			color.New(color.FgRed).Fprintf(outWriter, "[❌] %s (%s): FIX FAILED (%s)\n", name, scope, err.Error())
 		} else {
-			color.Green("[✅] %s (%s): FIXED\n", name, scope)
+			color.New(color.FgGreen).Fprintf(outWriter, "[✅] %s (%s): FIXED\n", name, scope)
 		}
 	} else if res.Status == model.StatusPassed {
-		color.Cyan("[✔] %s (%s): ALREADY PASSED\n", name, scope)
+		color.New(color.FgCyan).Fprintf(outWriter, "[✔] %s (%s): ALREADY PASSED\n", name, scope)
 	} else {
-		color.Yellow("[⚠️] %s (%s): SKIPPED (%s)\n", name, scope, res.Message)
+		color.New(color.FgYellow).Fprintf(outWriter, "[⚠️] %s (%s): SKIPPED (%s)\n", name, scope, res.Message)
 	}
 }
 

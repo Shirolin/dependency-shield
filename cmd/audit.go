@@ -14,8 +14,8 @@ var auditCmd = &cobra.Command{
 	Use:   "audit",
 	Short: "Audit package manager configurations for security policies",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("🛡️ DependencyShield Audit Report")
-		fmt.Println("---------------------------------")
+		fmt.Fprintln(outWriter, "🛡️ DependencyShield Audit Report")
+		fmt.Fprintln(outWriter, "---------------------------------")
 
 		tools := []struct {
 			name       string
@@ -64,10 +64,10 @@ func printResult(res model.AuditResult, toolName, scope string) {
 		c = color.New(color.FgWhite)
 	}
 
-	c.Printf("[%s] %s (%s): %s", icon, toolName, scope, res.Status)
+	c.Fprintf(outWriter, "[%s] %s (%s): %s", icon, toolName, scope, res.Status)
 	if res.Status == model.StatusPassed {
-		fmt.Printf(" (Path: %s)\n", res.ConfigPath)
+		fmt.Fprintf(outWriter, " (Path: %s)\n", res.ConfigPath)
 	} else {
-		fmt.Printf(" (%s)\n", res.Message)
+		fmt.Fprintf(outWriter, " (%s)\n", res.Message)
 	}
 }

@@ -2,10 +2,17 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/spf13/cobra"
 )
+
+var outWriter io.Writer = os.Stdout
+
+func SetOut(w io.Writer) {
+	outWriter = w
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "shield",
