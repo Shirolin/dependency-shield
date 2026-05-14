@@ -48,7 +48,7 @@ func TestAuditPnpm(t *testing.T) {
 	// Test Passed
 	pathPassed := filepath.Join(tmpDir, ".pnpmrc_passed")
 	os.WriteFile(pathPassed, []byte("minimum-release-age=43200\n"), 0644)
-	res = AuditPnpm(pathPassed)
+	res := AuditPnpm(pathPassed)
 	if res.Status != model.StatusPassed {
 		t.Errorf("Expected StatusPassed, got %s", res.Status)
 	}
@@ -76,7 +76,7 @@ func TestAuditUv(t *testing.T) {
 	// Test Passed (tool.uv)
 	pathPassed := filepath.Join(tmpDir, "uv.toml_passed")
 	os.WriteFile(pathPassed, []byte("[tool.uv]\nexclude-newer = \"30d\"\n"), 0644)
-	res = AuditUv(pathPassed)
+	res := AuditUv(pathPassed)
 	if res.Status != model.StatusPassed {
 		t.Errorf("Expected StatusPassed, got %s", res.Status)
 	}
@@ -104,7 +104,7 @@ func TestAuditBun(t *testing.T) {
 	// Test Passed
 	pathPassed := filepath.Join(tmpDir, "bunfig.toml_passed")
 	os.WriteFile(pathPassed, []byte("[install]\nminimumReleaseAge = 2592000\n"), 0644)
-	res = AuditBun(pathPassed)
+	res := AuditBun(pathPassed)
 	if res.Status != model.StatusPassed {
 		t.Errorf("Expected StatusPassed, got %s", res.Status)
 	}
@@ -123,5 +123,27 @@ func TestAuditBun(t *testing.T) {
 	res = AuditBun(pathFailed)
 	if res.Status != model.StatusFailed {
 		t.Errorf("Expected StatusFailed, got %s", res.Status)
+	}
+}
+
+func TestAuditTool(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	path1 := filepath.Join(tmpDir, ".npmrc_1")
+	os.WriteFile(path1, []byte("min-release-age=30\n"), 0644)
+	path2 := filepath.Join(tmpDir, ".npmrc_2")
+	os.WriteFile(path2, []byte("min-release-age=10\n"), 0644)
+
+	results := AuditTool("npm", []string{path1, path2})
+
+	if len(results) != 2 {
+		t.Fatalf("Expected 2 results, got %d", len(results))
+	}
+
+	if results[0].Status != model.StatusPassed {
+		t.Errorf("Result 0: Expected StatusPassed, got %s", results[0].Status)
+	}
+	if results[1].Status != model.StatusFailed {
+		t.Errorf("Result 1: Expected StatusFailed, got %s", results[1].Status)
 	}
 }

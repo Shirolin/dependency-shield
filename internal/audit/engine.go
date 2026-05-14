@@ -220,6 +220,33 @@ func AuditBun(path string) model.AuditResult {
 	return result
 }
 
+// AuditTool runs the appropriate audit for a tool across multiple configuration paths.
+func AuditTool(toolName string, paths []string) []model.AuditResult {
+	var results []model.AuditResult
+	for _, path := range paths {
+		var res model.AuditResult
+		switch strings.ToLower(toolName) {
+		case "npm":
+			res = AuditNpm(path)
+		case "pnpm":
+			res = AuditPnpm(path)
+		case "uv":
+			res = AuditUv(path)
+		case "bun":
+			res = AuditBun(path)
+		default:
+			res = model.AuditResult{
+				ToolName:   toolName,
+				ConfigPath: path,
+				Status:     model.StatusSkip,
+				Message:    "Unknown tool: " + toolName,
+			}
+		}
+		results = append(results, res)
+	}
+	return results
+}
+
 func getNestedValue(m map[string]interface{}, keys ...string) (interface{}, bool) {
 	var current interface{} = m
 	for _, key := range keys {

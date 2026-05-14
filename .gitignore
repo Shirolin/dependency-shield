@@ -1,0 +1,17 @@
+# Binaries
+*.exe
+shield
+
+# Testing & Coverage
+*.out
+*.prof
+cmd_coverage
+coverage
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
