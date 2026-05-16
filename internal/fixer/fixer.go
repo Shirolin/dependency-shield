@@ -9,30 +9,30 @@ import (
 	"github.com/shiro/dependency-shield/internal/config"
 )
 
-// FixNpmrc sets min-release-age in .npmrc
-func FixNpmrc(path string) error {
-	target := fmt.Sprintf("min-release-age=%s", config.NpmMinAge)
+// FixNpmrc sets min-release-age in .npmrc using the provided policy.
+func FixNpmrc(path string, p config.Policy) error {
+	target := fmt.Sprintf("min-release-age=%s", p.NpmMinAge())
 	re := regexp.MustCompile(`(?m)^min-release-age=.*$`)
 	return fixFile(path, re, target, target)
 }
 
-// FixPnpmrc sets minimum-release-age in .pnpmrc
-func FixPnpmrc(path string) error {
-	target := fmt.Sprintf("minimum-release-age=%s", config.PnpmMinAgeMins)
+// FixPnpmrc sets minimum-release-age in .pnpmrc using the provided policy.
+func FixPnpmrc(path string, p config.Policy) error {
+	target := fmt.Sprintf("minimum-release-age=%s", p.PnpmMinAgeMins())
 	re := regexp.MustCompile(`(?m)^minimum-release-age=.*$`)
 	return fixFile(path, re, target, target)
 }
 
-// FixUvConfig sets exclude-newer in uv.toml or pyproject.toml
-func FixUvConfig(path string) error {
-	target := fmt.Sprintf("exclude-newer = \"%s\"", config.UvExcludeNewer)
+// FixUvConfig sets exclude-newer in uv.toml or pyproject.toml using the provided policy.
+func FixUvConfig(path string, p config.Policy) error {
+	target := fmt.Sprintf("exclude-newer = \"%s\"", p.UvExcludeNewer())
 	re := regexp.MustCompile(`(?m)^exclude-newer\s*=.*$`)
 	return fixFile(path, re, target, target)
 }
 
-// FixBunfig sets minimumReleaseAge in bunfig.toml
-func FixBunfig(path string) error {
-	targetValue := fmt.Sprintf("minimumReleaseAge = %s", config.BunMinAgeSecs)
+// FixBunfig sets minimumReleaseAge in bunfig.toml using the provided policy.
+func FixBunfig(path string, p config.Policy) error {
+	targetValue := fmt.Sprintf("minimumReleaseAge = %s", p.BunMinAgeSecs())
 	re := regexp.MustCompile(`(?m)^minimumReleaseAge\s*=.*$`)
 
 	content, err := os.ReadFile(path)
@@ -53,7 +53,6 @@ func FixBunfig(path string) error {
 	installRe := regexp.MustCompile(`(?m)^\[install\]\s*$`)
 	if installRe.MatchString(sContent) {
 		// Use ReplaceAllStringFunc to ensure we only replace the [install] section header once and append after it
-		// Or simpler, just replace [install] with [install]\n...
 		newContent := installRe.ReplaceAllString(sContent, "[install]\n"+targetValue)
 		return os.WriteFile(path, []byte(newContent), 0644)
 	}

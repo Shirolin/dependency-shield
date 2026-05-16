@@ -28,3 +28,21 @@ func TestAuditCommand(t *testing.T) {
 		t.Errorf("Expected output to contain %q, but it didn't.\nOutput:\n%s", expected, output)
 	}
 }
+
+func TestAuditCommandDaysFlag(t *testing.T) {
+	color.NoColor = true
+	buf := new(bytes.Buffer)
+	SetOut(buf)
+
+	rootCmd.SetArgs([]string{"audit", "--days", "7"})
+	err := rootCmd.Execute()
+	if err != nil {
+		t.Fatalf("Failed to execute audit command with --days: %v", err)
+	}
+
+	output := buf.String()
+	expected := "Policy: Minimum release age = 7 days"
+	if !strings.Contains(output, expected) {
+		t.Errorf("Expected output to contain %q, but it didn't.\nOutput:\n%s", expected, output)
+	}
+}

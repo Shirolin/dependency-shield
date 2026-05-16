@@ -9,9 +9,14 @@ import (
 )
 
 var outWriter io.Writer = os.Stdout
+var inReader io.Reader = os.Stdin
 
 func SetOut(w io.Writer) {
 	outWriter = w
+}
+
+func SetIn(r io.Reader) {
+	inReader = r
 }
 
 var rootCmd = &cobra.Command{

@@ -2,9 +2,16 @@ package prober
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 )
+
+// IsToolInstalled checks if the given tool binary exists in the system PATH.
+func IsToolInstalled(name string) bool {
+	_, err := exec.LookPath(name)
+	return err == nil
+}
 
 // FindConfigUpwards searches for a file with the given name starting from the current
 // working directory and moving upwards to the root directory.
@@ -86,22 +93,98 @@ func GetBunfigPath() string {
 	return filepath.Join(home, ".bunfig.toml")
 }
 
-// GetLocalNpmrcPath returns the path to the local '.npmrc' file if found in the directory hierarchy.
-func GetLocalNpmrcPath() string {
-	return FindConfigUpwards(".npmrc")
+// FindConfigsDownwardsInDir searches for all files with the given name starting from the given
+// root directory and moving downwards into subdirectories.
+func FindConfigsDownwardsInDir(root, fileName string) []string {
+	var paths []string
+	
+	ignoreDirs := map[string]bool{
+		".git":         true,
+		"node_modules": true,
+		"venv":         true,
+		".venv":        true,
+		"target":       true,
+		"dist":         true,
+	}
+
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if ignoreDirs[d.Name()] {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.Name() == fileName {
+			absPath, _ := filepath.Abs(path)
+			paths = append(paths, absPath)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return paths
+	}
+
+	return paths
 }
 
-// GetLocalPnpmrcPath returns the path to the local '.npmrc' file (used by pnpm) if found.
-func GetLocalPnpmrcPath() string {
-	return FindConfigUpwards(".npmrc")
+// GetConfigsInPath returns all config files of a specific tool found within the given path (file or directory).
+func GetConfigsInPath(toolName, path string) []string {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil
+	}
+
+	fileName := ""
+	switch toolName {
+	case "npm", "pnpm":
+		fileName = ".npmrc"
+	case "uv":
+		fileName = "uv.toml"
+	case "bun":
+		fileName = ".bunfig.toml"
+	}
+
+	if !info.IsDir() {
+		if filepath.Base(path) == fileName {
+			abs, _ := filepath.Abs(path)
+			return []string{abs}
+		}
+		return nil
+	}
+
+	return FindConfigsDownwardsInDir(path, fileName)
 }
 
-// GetLocalUvConfigPath returns the path to the local 'uv.toml' file if found.
-func GetLocalUvConfigPath() string {
-	return FindConfigUpwards("uv.toml")
+// FindConfigsDownwards searches for all files with the given name starting from the current
+// working directory and moving downwards into subdirectories.
+func FindConfigsDownwards(fileName string) []string {
+	root, err := os.Getwd()
+	if err != nil {
+		return nil
+	}
+	return FindConfigsDownwardsInDir(root, fileName)
 }
 
-// GetLocalBunfigPath returns the path to the local '.bunfig.toml' file if found.
-func GetLocalBunfigPath() string {
-	return FindConfigUpwards(".bunfig.toml")
+// GetLocalNpmrcPaths returns all local '.npmrc' files found in the project.
+func GetLocalNpmrcPaths() []string {
+	return FindConfigsDownwards(".npmrc")
+}
+
+// GetLocalPnpmrcPaths returns all local '.npmrc' files (used by pnpm) found.
+func GetLocalPnpmrcPaths() []string {
+	return FindConfigsDownwards(".npmrc")
+}
+
+// GetLocalUvConfigPaths returns all local 'uv.toml' files found.
+func GetLocalUvConfigPaths() []string {
+	return FindConfigsDownwards("uv.toml")
+}
+
+// GetLocalBunfigPaths returns all local '.bunfig.toml' files found.
+func GetLocalBunfigPaths() []string {
+	return FindConfigsDownwards(".bunfig.toml")
 }
