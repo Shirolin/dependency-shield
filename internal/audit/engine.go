@@ -11,8 +11,8 @@ import (
 	"github.com/shiro/dependency-shield/internal/model"
 )
 
-// AuditNpm scans for 'min-release-age=30' in the given path.
-func AuditNpm(path string) model.AuditResult {
+// AuditNpm scans for 'min-release-age' in the given path using the provided policy.
+func AuditNpm(path string, p config.Policy) model.AuditResult {
 	result := model.AuditResult{
 		ToolName:   "npm",
 		ConfigPath: path,
@@ -31,15 +31,17 @@ func AuditNpm(path string) model.AuditResult {
 	}
 	defer file.Close()
 
+	target := p.MinAgeDays
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "min-release-age") {
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) == 2 {
-				val := strings.TrimSpace(parts[1])
-				result.CurrentVal = val
-				if val == config.NpmMinAge {
+				valStr := strings.TrimSpace(parts[1])
+				result.CurrentVal = valStr
+				val, err := strconv.Atoi(valStr)
+				if err == nil && val >= target {
 					result.Status = model.StatusPassed
 					result.Message = "Security policy met"
 					return result
@@ -51,14 +53,14 @@ func AuditNpm(path string) model.AuditResult {
 	if result.CurrentVal == "" {
 		result.Message = "min-release-age not found"
 	} else {
-		result.Message = "min-release-age is not " + config.NpmMinAge
+		result.Message = "min-release-age is less than " + strconv.Itoa(target)
 	}
 
 	return result
 }
 
-// AuditPnpm scans for 'minimum-release-age=43200' (or higher) in the given path.
-func AuditPnpm(path string) model.AuditResult {
+// AuditPnpm scans for 'minimum-release-age' in the given path using the provided policy.
+func AuditPnpm(path string, p config.Policy) model.AuditResult {
 	result := model.AuditResult{
 		ToolName:   "pnpm",
 		ConfigPath: path,
@@ -77,7 +79,8 @@ func AuditPnpm(path string) model.AuditResult {
 	}
 	defer file.Close()
 
-	target, _ := strconv.Atoi(config.PnpmMinAgeMins)
+	targetMins := p.PnpmMinAgeMins()
+	target, _ := strconv.Atoi(targetMins)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -99,14 +102,14 @@ func AuditPnpm(path string) model.AuditResult {
 	if result.CurrentVal == "" {
 		result.Message = "minimum-release-age not found"
 	} else {
-		result.Message = "minimum-release-age is less than " + config.PnpmMinAgeMins
+		result.Message = "minimum-release-age is less than " + targetMins
 	}
 
 	return result
 }
 
-// AuditUv scans for 'exclude-newer = "30d"' in the given TOML file.
-func AuditUv(path string) model.AuditResult {
+// AuditUv scans for 'exclude-newer' in the given TOML file using the provided policy.
+func AuditUv(path string, p config.Policy) model.AuditResult {
 	result := model.AuditResult{
 		ToolName:   "uv",
 		ConfigPath: path,
@@ -130,6 +133,7 @@ func AuditUv(path string) model.AuditResult {
 		return result
 	}
 
+	target := p.UvExcludeNewer()
 	// Try [tool.uv] exclude-newer or top-level exclude-newer
 	val, ok := getNestedValue(cfg, "tool", "uv", "exclude-newer")
 	if !ok {
@@ -139,7 +143,7 @@ func AuditUv(path string) model.AuditResult {
 	if ok {
 		if s, ok := val.(string); ok {
 			result.CurrentVal = s
-			if s == config.UvExcludeNewer {
+			if s == target {
 				result.Status = model.StatusPassed
 				result.Message = "Security policy met"
 				return result
@@ -150,14 +154,14 @@ func AuditUv(path string) model.AuditResult {
 	if !ok {
 		result.Message = "exclude-newer not found"
 	} else {
-		result.Message = "exclude-newer is not " + config.UvExcludeNewer
+		result.Message = "exclude-newer is not " + target
 	}
 
 	return result
 }
 
-// AuditBun scans for 'minimumReleaseAge = 2592000' under '[install]' in the given TOML file.
-func AuditBun(path string) model.AuditResult {
+// AuditBun scans for 'minimumReleaseAge' under '[install]' in the given TOML file using the provided policy.
+func AuditBun(path string, p config.Policy) model.AuditResult {
 	result := model.AuditResult{
 		ToolName:   "bun",
 		ConfigPath: path,
@@ -183,7 +187,8 @@ func AuditBun(path string) model.AuditResult {
 
 	val, ok := getNestedValue(cfg, "install", "minimumReleaseAge")
 	if ok {
-		target, _ := strconv.ParseInt(config.BunMinAgeSecs, 10, 64)
+		targetSecs := p.BunMinAgeSecs()
+		target, _ := strconv.ParseInt(targetSecs, 10, 64)
 		var currentVal int64
 		var isValid bool
 
@@ -214,26 +219,26 @@ func AuditBun(path string) model.AuditResult {
 	if !ok {
 		result.Message = "minimumReleaseAge not found"
 	} else {
-		result.Message = "minimumReleaseAge is less than " + config.BunMinAgeSecs
+		result.Message = "minimumReleaseAge is less than " + p.BunMinAgeSecs()
 	}
 
 	return result
 }
 
 // AuditTool runs the appropriate audit for a tool across multiple configuration paths.
-func AuditTool(toolName string, paths []string) []model.AuditResult {
+func AuditTool(toolName string, paths []string, p config.Policy) []model.AuditResult {
 	var results []model.AuditResult
 	for _, path := range paths {
 		var res model.AuditResult
 		switch strings.ToLower(toolName) {
 		case "npm":
-			res = AuditNpm(path)
+			res = AuditNpm(path, p)
 		case "pnpm":
-			res = AuditPnpm(path)
+			res = AuditPnpm(path, p)
 		case "uv":
-			res = AuditUv(path)
+			res = AuditUv(path, p)
 		case "bun":
-			res = AuditBun(path)
+			res = AuditBun(path, p)
 		default:
 			res = model.AuditResult{
 				ToolName:   toolName,
