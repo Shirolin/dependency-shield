@@ -90,6 +90,20 @@ var auditCmd = &cobra.Command{
 				}
 			}
 		}
+
+		// 输出建议
+		fmt.Fprintln(outWriter, "\n💡 Security Recommendations:")
+		if minAgeDays < 15 {
+			fmt.Fprintln(outWriter, "- [Local] Your policy is set to Local development (7-14 days). This balances speed and safety.")
+		}
+		if minAgeDays >= 15 && minAgeDays < 30 {
+			fmt.Fprintln(outWriter, "- [CI/Test] Your policy is set to CI/Test (15 days). Recommended for shared staging environments.")
+		}
+		if minAgeDays >= 30 {
+			fmt.Fprintln(outWriter, "- [Prod] Your policy is set to Production (30 days). Maximum protection against supply chain attacks.")
+		}
+
+		fmt.Fprintln(outWriter, "- Suggestion: Use '--env' to quickly switch presets: 'audit -e local', 'audit -e ci', or 'audit -e prod'.")
 	},
 }
 
