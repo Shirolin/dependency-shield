@@ -133,7 +133,7 @@ func AuditUv(path string, p config.Policy) model.AuditResult {
 		return result
 	}
 
-	target := p.UvExcludeNewer()
+	target := p.MinAgeDays
 	// Try [tool.uv] exclude-newer or top-level exclude-newer
 	val, ok := getNestedValue(cfg, "tool", "uv", "exclude-newer")
 	if !ok {
@@ -143,7 +143,10 @@ func AuditUv(path string, p config.Policy) model.AuditResult {
 	if ok {
 		if s, ok := val.(string); ok {
 			result.CurrentVal = s
-			if s == target {
+			// Parse numeric part, e.g., "30d" -> 30
+			numStr := strings.TrimSuffix(s, "d")
+			valNum, err := strconv.Atoi(numStr)
+			if err == nil && valNum >= target {
 				result.Status = model.StatusPassed
 				result.Message = "Security policy met"
 				return result
@@ -154,7 +157,7 @@ func AuditUv(path string, p config.Policy) model.AuditResult {
 	if !ok {
 		result.Message = "exclude-newer not found"
 	} else {
-		result.Message = "exclude-newer is not " + target
+		result.Message = "exclude-newer is less than " + strconv.Itoa(target) + "d"
 	}
 
 	return result
